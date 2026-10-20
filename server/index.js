@@ -1,17 +1,23 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const { initializeApp, cert } = require("firebase-admin/app");
+const { initializeApp, getApps, cert } = require("firebase-admin/app");
 const { getAuth } = require("firebase-admin/auth");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
-const serviceAccount = require("./serviceAccountKey.json");
 
-initializeApp({ credential: cert(serviceAccount) });
+// Production (Vercel): key comes from an env var. Local dev: key comes from the file.
+const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
+  ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+  : require("./serviceAccountKey.json");
+
+if (!getApps().length) {
+  initializeApp({ credential: cert(serviceAccount) });
+}
 const db = getFirestore();
 const auth = getAuth();
 
 const app = express();
-app.use(cors()); // fine for development; we'll restrict this when deploying
+app.use(cors()); // fine: in production the client calls /api on the same domain
 app.use(express.json());
 
 const ROLES = ["user", "technician", "admin"];
@@ -165,6 +171,7 @@ app.patch("/api/me", authenticate, async (req, res) => {
     authError(e, res);
   }
 });
+
 const lookupRoutes = require("./lookup");
 app.use("/api/lookup", authenticate, lookupRoutes);
 
@@ -175,8 +182,12 @@ app.get("/", (req, res) => res.send("GRM server is running"));
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Local: http://localhost:${PORT}`);
-  console.log(`Network: http://192.168.3.39:${PORT}`);
-});
+// Vercel imports the exported app; locally `node index.js` still starts a server.
+module.exports = app;
+
+if (require.main === module) {
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Local: http://localhost:${PORT}`);
+  });
+}
