@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Hash, MapPin, Phone, Send, User } from "lucide-react";
 import Logo from "../components/Logo";
-import { BASE } from "../lib/api";
-// const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+// const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const BASE = import.meta.env.VITE_API_URL ?? "";
 const GREETING =
   "Hello and welcome to Glercimor Network OPC Support! I'm here to help with your internet connection. What issue are you experiencing today?";
 

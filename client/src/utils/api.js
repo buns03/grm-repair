@@ -1,42 +1,33 @@
-
 import { auth } from "../firebase";
 
 // const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
-export const BASE = import.meta.env.VITE_API_URL ?? "";
+const BASE = import.meta.env.VITE_API_URL ?? "";
+
+async function send(path, method, body, forceRefresh) {
+  const headers = { "Content-Type": "application/json" };
+  if (auth.currentUser) {
+    headers.Authorization = `Bearer ${await auth.currentUser.getIdToken(forceRefresh)}`;
+  }
+  return fetch(`${BASE}${path}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+}
 
 export async function api(path, { method = "GET", body } = {}) {
-  let token = null;
-
-  // Add Firebase token only when a user is signed in.
-  if (auth.currentUser) {
-    token = await auth.currentUser.getIdToken();
-  }
-
-  const headers = {
-    "Content-Type": "application/json",
-  };
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
   let res;
-
   try {
-    res = await fetch(`${BASE}${path}`, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-    });
+    res = await send(path, method, body, false);
+    if (res.status === 401 && auth.currentUser) {
+      res = await send(path, method, body, true); // retry once with a fresh token
+      if (res.status === 401) await auth.signOut(); // really invalid: back to login
+    }
   } catch {
     throw new Error("Cannot reach the server. Is it running?");
   }
 
   const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    throw new Error(data.error || "Request failed");
-  }
-
+  if (!res.ok) throw new Error(data.error || "Request failed");
   return data;
 }
