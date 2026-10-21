@@ -1,8 +1,9 @@
 const express = require("express");
-const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const admin = require("firebase-admin");
 const { lookupCustomers } = require("./portal");
 
-const db = getFirestore();
+const FieldValue = admin.firestore.FieldValue;
+const db = admin.firestore();
 
 const FB_PAGE = "Glercimor Network OPC San Jose Del Monte Bulacan";
 
