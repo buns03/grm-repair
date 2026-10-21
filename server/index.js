@@ -1,18 +1,19 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const admin = require("firebase-admin");
 const fs = require("fs");
 const path = require("path");
+const { initializeApp, cert } = require("firebase-admin/app");
+const { getAuth } = require("firebase-admin/auth");
+const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 
 const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
   ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
   : JSON.parse(fs.readFileSync(path.join(__dirname, "serviceAccountKey.json"), "utf8"));
 
-admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-const db = admin.firestore();
-const auth = admin.auth();
-const FieldValue = admin.firestore.FieldValue;
+initializeApp({ credential: cert(serviceAccount) });
+const db = getFirestore();
+const auth = getAuth();
 
 const app = express();
 app.use(cors()); // fine for development; we'll restrict this when deploying
